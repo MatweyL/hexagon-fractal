@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fractals</title>
+	<style type="text/css">
+		body {
+			font-family: sans-serif;
+			background-color: #262626;
+		}
+
+		.centred-container {
+			display: flex;
+			justify-content: center;
+		}
+
+		.page-block {
+			color: white;
+		}
+
+		.start-button {
+			display: block;
+			margin-top: 15px;
+			width: 100%;
+		}
+	</style>
+	<script type="text/javascript" src="./base.js"></script>
+</head>
+<body>
+	<div class="centred-container">
+		<div class="page-block">
+			<label for="speed">Скорость</label>
+			<select id="speed">
+				<option value="50">Медленно</option>
+				<option value="10" selected>Быстро</option>
+				<option value="0">Мгновенно</option>
+			</select>
+			<button class="start-button" id="startButton">Старт!</button>
+		</div>
+		
+	</div>
+	
+	<div class="centred-container">
+		<canvas></canvas>
+	</div>
+
+	<div class="centred-container">
+		<div class="page-block">Прогресс: <span id="progressPercents">0</span>%</div>
+	</div>
+
+	<script type="text/javascript">
+		console.log(window.innerWidth);
+		let MAX_X = 400;
+		let MAX_Y = 400;
+		var canvas = document.querySelector("canvas");
+		var context = canvas.getContext("2d");
+
+		const fCanvas = new FractalCanvas(context, MAX_X, MAX_Y);
+		fCanvas.setCanvasSizes();
+		fCanvas.setColor("white");
+		let hexagonRadius = MAX_X / 3;
+		let hexagon = new Hexagon(hexagonRadius);
+		let coordinates = hexagon.getCoordinates(MAX_X / 2, MAX_Y / 2);
+		let lastPoint = coordinates[coordinates.length - 1];
+		context.lineWidth = 1;
+		context.strokeStyle = "white";
+		context.beginPath();
+		context.moveTo(lastPoint.x, lastPoint.y);
+
+		coordinates.forEach(point => {
+			fCanvas.drawPoint(point);
+		    context.lineTo(point.x, point.y);
+		});
+   		context.stroke();
+
+		let firstPoint = coordinates[0];
+
+		let INSTANT_DRAW_MS_BOUND = 1;
+		let currentSleepMS = 50;
+
+
+		let ITERATIONS_COUNT = 10000;
+		let currentIteration = 0;
+
+		async function drawFractal() {
+	   		let centroidPoint = new Point(firstPoint.x - getRandomNumber(0, hexagonRadius / 2), firstPoint.y - getRandomNumber(0, hexagonRadius / 10))
+	   		for (; currentIteration < ITERATIONS_COUNT; currentIteration++) {
+	   			let hexagonLine = getHexagonRandomLine(coordinates);
+	   			let newCentroidPoint = getCentroid(centroidPoint, hexagonLine.point1, hexagonLine.point2);
+	   			centroidPoint = newCentroidPoint;
+	   			fCanvas.drawPoint(centroidPoint);
+	   			if (currentSleepMS > INSTANT_DRAW_MS_BOUND) {
+	   				await sleep(currentSleepMS);
+	   			}
+	   			updateProgress();
+	   		}
+	   		updateProgress();
+	   	}
+
+	   	function changeDrawingSpeed() {
+	   		currentSleepMS = speedSelector.value;
+	   		console.log(currentSleepMS);
+	   	}
+
+	   	function updateProgress() {
+	   		let progressRaw = Math.round(currentIteration / ITERATIONS_COUNT * 1000);
+	   		let progressWholePart = Math.round(progressRaw / 10);
+	   		let progressFractionalPart = progressRaw % 10;
+	   	
+	   		progressPercents.textContent = progressWholePart + "." + progressFractionalPart;
+	   	}
+
+	   	let startButton = document.getElementById("startButton");
+	   	let speedSelector = document.getElementById("speed");
+	   	let progressPercents = document.getElementById("progressPercents");
+	   	speedSelector.onchange = changeDrawingSpeed;
+	   	currentSleepMS = speedSelector.value;
+	   	startButton.onclick = drawFractal;
+
+	</script>
+</body>
+</html>
